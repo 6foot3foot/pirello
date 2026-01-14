@@ -1,0 +1,127 @@
+.board {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+}
+
+.header {
+  padding: 1rem 1.5rem;
+  background: var(--color-header-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.projectNameRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.projectNameLabel {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.projectNameInput {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  background: var(--color-card-bg);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  padding: 0.25rem 0.5rem;
+  font-family: inherit;
+  width: min(100%, 420px);
+}
+
+.projectNameInput:focus {
+  outline: none;
+}
+
+.lanesContainer {
+  flex: 1;
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  overflow-x: auto;
+  align-items: flex-start;
+}
+
+.lanesContainer::-webkit-scrollbar {
+  height: 10px;
+}
+
+.lanesContainer::-webkit-scrollbar-track {
+  background: var(--color-lane-bg);
+  border-radius: 5px;
+}
+
+.lanesContainer::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 5px;
+}
+
+.lanesContainer::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: var(--color-text-muted);
+}
+
+.addLaneBtn {
+  min-width: 280px;
+  padding: 0.75rem 1rem;
+  background: var(--color-lane-bg);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.addLaneBtn:hover {
+  background: var(--color-hover);
+  border-color: var(--color-text-muted);
+  color: var(--color-text);
+}
+
+.addLaneForm {
+  min-width: 280px;
+  padding: 0.75rem;
+  background: var(--color-lane-bg);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.addLaneInput {
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-family: inherit;
+  background: var(--color-card-bg);
+  color: var(--color-text);
+}
+
+.addLaneInput:focus {
+  outline: none;
+}
+
+.addLaneActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
