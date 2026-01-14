@@ -1,4 +1,4 @@
-# Trello-ish Board
+# PiRello (Trello-ish) Board
 
 This app stores board state via a local API backed by SQLite so it persists across browsers and devices.
 
