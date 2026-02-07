@@ -17,6 +17,10 @@
   gap: 0.75rem;
 }
 
+.backButton {
+  font-size: 0.8rem;
+}
+
 .projectNameLabel {
   text-transform: uppercase;
   letter-spacing: 0.08em;

@@ -5,7 +5,8 @@ import type { Lane } from './lane';
  */
 export interface Project {
   id: string;
-  name: string;
+  title: string;
+  thumbnailUrl?: string | null;
   lanes: Lane[];
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string

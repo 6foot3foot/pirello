@@ -1,11 +1,14 @@
-import type { Card, Lane, Project } from '../types';
+import type { Card, CardVersion, Lane, Project } from '../types';
 
 /**
  * All possible actions for the board reducer
  */
 export type BoardAction =
   // Card actions
-  | { type: 'ADD_CARD'; payload: Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'isDeleted'> }
+  | {
+      type: 'ADD_CARD';
+      payload: Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'isDeleted' | 'projectId'>;
+    }
   | { type: 'UPDATE_CARD'; payload: { id: string; updates: Partial<Card> } }
   | { type: 'DELETE_CARD'; payload: { id: string } }
   | { type: 'RESTORE_CARD'; payload: { id: string } }
@@ -18,7 +21,10 @@ export type BoardAction =
   | { type: 'DELETE_LANE'; payload: { id: string } }
   | { type: 'REORDER_LANES'; payload: { laneIds: string[] } }
   // Project actions
-  | { type: 'UPDATE_PROJECT'; payload: Partial<Project> }
+  | { type: 'ADD_PROJECT'; payload: { title: string; thumbnailUrl?: string | null } }
+  | { type: 'UPDATE_PROJECT'; payload: { id: string; updates: Partial<Project> } }
+  | { type: 'DELETE_PROJECT'; payload: { id: string } }
+  | { type: 'SET_ACTIVE_PROJECT'; payload: { id: string } }
   | { type: 'LOAD_STATE'; payload: BoardState }
   // Error handling
   | { type: 'SET_ERROR'; payload: string | null };
@@ -27,21 +33,11 @@ export type BoardAction =
  * Board state shape
  */
 export interface BoardState {
-  project: Project;
+  projects: Project[];
+  activeProjectId: string | null;
   cards: Record<string, Card>;
   cardVersions: Record<string, CardVersion[]>;
   isLoading: boolean;
   error: string | null;
-}
-
-/**
- * Card version for undo functionality
- */
-interface CardVersion {
-  id: string;
-  cardId: string;
-  version: number;
-  data: Omit<Card, 'id'>;
-  timestamp: string;
 }
 

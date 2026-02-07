@@ -1,0 +1,150 @@
+.page {
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin: 0 0 0.35rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.createPanel {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: flex-end;
+}
+
+.createFields {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.createActions {
+  display: flex;
+  align-items: center;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.thumbnail {
+  height: 140px;
+  background: var(--color-lane-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thumbnailImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbnailPlaceholder {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.cardBody {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cardHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.cardMeta {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.thumbnailEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.thumbnailLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.thumbnailInput {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.thumbnailInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.cardActions {
+  display: flex;
+  justify-content: flex-start;
+}

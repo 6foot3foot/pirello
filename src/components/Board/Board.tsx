@@ -23,9 +23,14 @@ import { Card } from '../Card';
 import { Button } from '../common';
 import styles from './Board.module.css';
 
-export function Board() {
+interface BoardProps {
+  onBackToProjects?: () => void;
+}
+
+export function Board({ onBackToProjects }: BoardProps) {
   const {
     state,
+    activeProject,
     getCardsByLane,
     moveCard,
     reorderCards,
@@ -36,20 +41,22 @@ export function Board() {
   const [activeCard, setActiveCard] = useState<CardType | null>(null);
   const [isAddingLane, setIsAddingLane] = useState(false);
   const [newLaneTitle, setNewLaneTitle] = useState('');
-  const [projectNameDraft, setProjectNameDraft] = useState(state.project.name);
+  const [projectNameDraft, setProjectNameDraft] = useState(
+    activeProject?.title ?? ''
+  );
 
   useEffect(() => {
-    setProjectNameDraft(state.project.name);
-  }, [state.project.name]);
+    setProjectNameDraft(activeProject?.title ?? '');
+  }, [activeProject?.title]);
 
   const saveProjectName = () => {
     const trimmed = projectNameDraft.trim();
     if (!trimmed) {
-      setProjectNameDraft(state.project.name);
+      setProjectNameDraft(activeProject?.title ?? '');
       return;
     }
-    if (trimmed !== state.project.name) {
-      updateProject({ name: trimmed });
+    if (trimmed !== (activeProject?.title ?? '')) {
+      updateProject({ title: trimmed });
     }
   };
 
@@ -90,7 +97,7 @@ export function Board() {
     let overLaneId: string | null = null;
 
     // Check if we're over a lane directly
-    const overLane = state.project.lanes.find(l => l.id === overId);
+    const overLane = activeProject?.lanes.find(l => l.id === overId);
     if (overLane) {
       overLaneId = overLane.id;
     } else {
@@ -103,7 +110,7 @@ export function Board() {
 
     // If we're over a different lane, move the card
     if (overLaneId && overLaneId !== activeCard.laneId) {
-      const overLane = state.project.lanes.find(l => l.id === overLaneId);
+      const overLane = activeProject?.lanes.find(l => l.id === overLaneId);
       if (overLane) {
         const overIndex = overLane.cardIds.length;
         moveCard(activeId, overLaneId, overIndex);
@@ -121,11 +128,11 @@ export function Board() {
     const overId = over.id as string;
 
     // Check if we're reordering lanes
-    const activeLane = state.project.lanes.find(l => l.id === activeId);
-    const overLane = state.project.lanes.find(l => l.id === overId);
+    const activeLane = activeProject?.lanes.find(l => l.id === activeId);
+    const overLane = activeProject?.lanes.find(l => l.id === overId);
 
     if (activeLane && overLane && activeId !== overId) {
-      const laneIds = state.project.lanes.map(l => l.id);
+      const laneIds = activeProject?.lanes.map(l => l.id) ?? [];
       const oldIndex = laneIds.indexOf(activeId);
       const newIndex = laneIds.indexOf(overId);
 
@@ -143,7 +150,7 @@ export function Board() {
 
     const overCard = state.cards[overId];
     if (overCard && activeCard.laneId === overCard.laneId && activeId !== overId) {
-      const lane = state.project.lanes.find(l => l.id === activeCard.laneId);
+      const lane = activeProject?.lanes.find(l => l.id === activeCard.laneId);
       if (!lane) return;
 
       const cardIds = [...lane.cardIds];
@@ -165,9 +172,11 @@ export function Board() {
     }
   };
 
-  const sortedLanes = [...state.project.lanes].sort((a, b) => a.order - b.order);
+  const sortedLanes = [...(activeProject?.lanes ?? [])].sort(
+    (a, b) => a.order - b.order
+  );
 
-  if (state.isLoading) {
+  if (state.isLoading || !activeProject) {
     return (
       <div className={styles.loading}>
         <p>Loading board...</p>
@@ -180,6 +189,16 @@ export function Board() {
       {/* Header */}
       <header className={styles.header}>
         <div className={styles.projectNameRow}>
+          {onBackToProjects && (
+            <Button
+              variant="ghost"
+              size="small"
+              className={styles.backButton}
+              onClick={onBackToProjects}
+            >
+              ← Projects
+            </Button>
+          )}
           <span className={styles.projectNameLabel}>Project</span>
           <input
             className={styles.projectNameInput}
@@ -189,11 +208,11 @@ export function Board() {
             onKeyDown={event => {
               if (event.key === 'Enter') saveProjectName();
               if (event.key === 'Escape') {
-                setProjectNameDraft(state.project.name);
+                setProjectNameDraft(activeProject.title);
               }
             }}
-            placeholder="Project name"
-            aria-label="Project name"
+            placeholder="Project title"
+            aria-label="Project title"
           />
         </div>
       </header>

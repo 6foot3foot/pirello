@@ -9,7 +9,8 @@ import {
 } from 'react';
 import type { BoardAction, BoardState } from './BoardActions';
 import { boardReducer } from './BoardReducer';
-import type { Card, Lane, Project } from '../types';
+import type { Card, CardVersion, Lane, Project } from '../types';
+import { DEFAULT_LANES } from '../types';
 import { generateId } from '../utils';
 import { storage } from '../services';
 
@@ -19,9 +20,14 @@ import { storage } from '../services';
 interface BoardContextValue {
     state: BoardState;
     dispatch: React.Dispatch<BoardAction>;
+    activeProject: Project | null;
+    activeProjectId: string | null;
+    projects: Project[];
 
     // Card methods
-    addCard: (card: Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'isDeleted'>) => void;
+    addCard: (
+        card: Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'isDeleted' | 'projectId'>
+    ) => void;
     updateCard: (id: string, updates: Partial<Card>) => void;
     deleteCard: (id: string) => void;
     restoreCard: (id: string) => void;
@@ -37,6 +43,10 @@ interface BoardContextValue {
 
     // Project methods
     updateProject: (updates: Partial<Project>) => void;
+    updateProjectById: (id: string, updates: Partial<Project>) => void;
+    addProject: (input: { title: string; thumbnailUrl?: string | null }) => void;
+    deleteProject: (id: string) => void;
+    setActiveProject: (id: string) => void;
 
     // Helpers
     getCardsByLane: (laneId: string) => Card[];
@@ -46,28 +56,142 @@ interface BoardContextValue {
 const BoardContext = createContext<BoardContextValue | null>(null);
 
 /**
+ * Create default lanes
+ */
+function createDefaultLanes(): Lane[] {
+    return DEFAULT_LANES.map(lane => ({
+        ...lane,
+        id: generateId(),
+    }));
+}
+
+/**
  * Create initial state with default project and lanes
  */
 function createInitialState(): BoardState {
     const now = new Date().toISOString();
-    const defaultLanes: Lane[] = [
-        { id: generateId(), title: 'Todo', order: 0, cardIds: [] },
-        { id: generateId(), title: 'Doing', order: 1, cardIds: [] },
-        { id: generateId(), title: 'Done', order: 2, cardIds: [] },
-    ];
+    const defaultLanes = createDefaultLanes();
+    const defaultProject: Project = {
+        id: generateId(),
+        title: 'Stuff to do now, stuff to do later',
+        thumbnailUrl: null,
+        lanes: defaultLanes,
+        createdAt: now,
+        updatedAt: now,
+    };
 
     return {
-        project: {
-            id: generateId(),
-            name: 'Stuff to do now, stuff to do later',
-            lanes: defaultLanes,
-            createdAt: now,
-            updatedAt: now,
-        },
+        projects: [defaultProject],
+        activeProjectId: defaultProject.id,
         cards: {},
         cardVersions: {},
         isLoading: true,
         error: null,
+    };
+}
+
+type LegacyBoardState = {
+    project: {
+        id: string;
+        name?: string;
+        title?: string;
+        lanes: Lane[];
+        createdAt: string;
+        updatedAt: string;
+    };
+    cards: Record<string, Omit<Card, 'projectId'> & { projectId?: string }>;
+    cardVersions: Record<string, CardVersion[]>;
+    isLoading?: boolean;
+    error?: string | null;
+};
+
+function normalizeState(raw: BoardState | LegacyBoardState): BoardState {
+    if ('projects' in raw) {
+        const projects = raw.projects.map(project => ({
+            ...project,
+            title: project.title ?? 'Untitled project',
+            thumbnailUrl: project.thumbnailUrl ?? null,
+        }));
+        const candidateProjectId = raw.activeProjectId ?? projects[0]?.id ?? null;
+        const activeProjectId = projects.some(project => project.id === candidateProjectId)
+            ? candidateProjectId
+            : projects[0]?.id ?? null;
+        const cards = Object.fromEntries(
+            Object.entries(raw.cards).map(([id, card]) => [
+                id,
+                {
+                    ...card,
+                    projectId: card.projectId ?? activeProjectId ?? '',
+                },
+            ])
+        );
+        const cardVersions = Object.fromEntries(
+            Object.entries(raw.cardVersions ?? {}).map(([cardId, versions]) => {
+                const projectId = cards[cardId]?.projectId ?? activeProjectId ?? '';
+                return [
+                    cardId,
+                    versions.map(version => ({
+                        ...version,
+                        data: {
+                            ...version.data,
+                            projectId: version.data.projectId ?? projectId,
+                        },
+                    })),
+                ];
+            })
+        );
+        return {
+            ...raw,
+            projects,
+            activeProjectId,
+            cards,
+            cardVersions,
+            isLoading: raw.isLoading ?? false,
+            error: raw.error ?? null,
+        };
+    }
+
+    const project = raw.project;
+    const normalizedProject: Project = {
+        id: project.id,
+        title: project.title ?? project.name ?? 'Untitled project',
+        thumbnailUrl: null,
+        lanes: project.lanes ?? createDefaultLanes(),
+        createdAt: project.createdAt ?? new Date().toISOString(),
+        updatedAt: project.updatedAt ?? new Date().toISOString(),
+    };
+    const cards = Object.fromEntries(
+        Object.entries(raw.cards ?? {}).map(([id, card]) => [
+            id,
+            {
+                ...card,
+                projectId: card.projectId ?? normalizedProject.id,
+            },
+        ])
+    );
+    const cardVersions = Object.fromEntries(
+        Object.entries(raw.cardVersions ?? {}).map(([cardId, versions]) => {
+            const projectId = cards[cardId]?.projectId ?? normalizedProject.id;
+            return [
+                cardId,
+                versions.map(version => ({
+                    ...version,
+                    data: {
+                        ...version.data,
+                        projectId: version.data.projectId ?? projectId,
+                    },
+                })),
+            ];
+        })
+    );
+
+    return {
+        projects: [normalizedProject],
+        activeProjectId: normalizedProject.id,
+        cards,
+        cardVersions,
+        isLoading: raw.isLoading ?? false,
+        error: raw.error ?? null,
     };
 }
 
@@ -103,7 +227,11 @@ export function BoardProvider({ children, initialState }: BoardProviderProps) {
                 if (!isActive) return;
 
                 if (savedState) {
-                    dispatch({ type: 'LOAD_STATE', payload: { ...savedState, isLoading: false } });
+                    const normalized = normalizeState(savedState);
+                    dispatch({
+                        type: 'LOAD_STATE',
+                        payload: { ...normalized, isLoading: false },
+                    });
                 } else {
                     // No saved state, mark as loaded
                     dispatch({ type: 'SET_ERROR', payload: null });
@@ -152,7 +280,9 @@ export function BoardProvider({ children, initialState }: BoardProviderProps) {
 
     // Card methods
     const addCard = useCallback(
-        (card: Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'isDeleted'>) => {
+        (
+            card: Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'isDeleted' | 'projectId'>
+        ) => {
             dispatch({ type: 'ADD_CARD', payload: card });
         },
         []
@@ -204,20 +334,58 @@ export function BoardProvider({ children, initialState }: BoardProviderProps) {
 
     // Project methods
     const updateProject = useCallback((updates: Partial<Project>) => {
-        dispatch({ type: 'UPDATE_PROJECT', payload: updates });
+        if (!state.activeProjectId) return;
+        dispatch({
+            type: 'UPDATE_PROJECT',
+            payload: { id: state.activeProjectId, updates },
+        });
+    }, [state.activeProjectId]);
+
+    const updateProjectById = useCallback((id: string, updates: Partial<Project>) => {
+        dispatch({ type: 'UPDATE_PROJECT', payload: { id, updates } });
+    }, []);
+
+    const addProject = useCallback(
+        (input: { title: string; thumbnailUrl?: string | null }) => {
+            const trimmed = input.title.trim();
+            if (!trimmed) return;
+            const payload = {
+                title: trimmed,
+                thumbnailUrl: input.thumbnailUrl?.trim() || null,
+            };
+            dispatch({ type: 'ADD_PROJECT', payload });
+        },
+        []
+    );
+
+    const deleteProject = useCallback((id: string) => {
+        dispatch({ type: 'DELETE_PROJECT', payload: { id } });
+    }, []);
+
+    const setActiveProject = useCallback((id: string) => {
+        dispatch({ type: 'SET_ACTIVE_PROJECT', payload: { id } });
     }, []);
 
     // Helper methods
     const getCardsByLane = useCallback(
         (laneId: string): Card[] => {
-            const lane = state.project.lanes.find(l => l.id === laneId);
+            const activeProject = state.projects.find(
+                project => project.id === state.activeProjectId
+            );
+            if (!activeProject) return [];
+            const lane = activeProject.lanes.find(l => l.id === laneId);
             if (!lane) return [];
 
             return lane.cardIds
                 .map(cardId => state.cards[cardId])
-                .filter((card): card is Card => card !== undefined && !card.isDeleted);
+                .filter(
+                    (card): card is Card =>
+                        card !== undefined &&
+                        !card.isDeleted &&
+                        card.projectId === activeProject.id
+                );
         },
-        [state.project.lanes, state.cards]
+        [state.projects, state.cards, state.activeProjectId]
     );
 
     const canUndoCard = useCallback(
@@ -231,6 +399,11 @@ export function BoardProvider({ children, initialState }: BoardProviderProps) {
     const value: BoardContextValue = {
         state,
         dispatch,
+        activeProject:
+            state.projects.find(project => project.id === state.activeProjectId) ??
+            null,
+        activeProjectId: state.activeProjectId,
+        projects: state.projects,
         addCard,
         updateCard,
         deleteCard,
@@ -243,6 +416,10 @@ export function BoardProvider({ children, initialState }: BoardProviderProps) {
         deleteLane,
         reorderLanes,
         updateProject,
+        updateProjectById,
+        addProject,
+        deleteProject,
+        setActiveProject,
         getCardsByLane,
         canUndoCard,
     };

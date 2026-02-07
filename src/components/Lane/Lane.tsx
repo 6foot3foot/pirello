@@ -22,7 +22,8 @@ export function Lane({ lane, cards }: LaneProps) {
   const [title, setTitle] = useState(lane.title);
   const [cardToDelete, setCardToDelete] = useState<string | null>(null);
 
-  const { addCard, deleteCard, updateLane, deleteLane, state } = useBoard();
+  const { addCard, deleteCard, updateLane, deleteLane, activeProject } =
+    useBoard();
 
   const {
     attributes,
@@ -73,7 +74,7 @@ export function Lane({ lane, cards }: LaneProps) {
     }
   };
 
-  const canDeleteLane = state.project.lanes.length > 1;
+  const canDeleteLane = (activeProject?.lanes.length ?? 0) > 1;
 
   return (
     <>

@@ -1,10 +1,33 @@
+import { useState } from 'react';
 import { BoardProvider } from './context';
-import { Board } from './components';
+import { Board, ProjectsOverview } from './components';
+
+function AppContent() {
+  const [view, setView] = useState<'overview' | 'board'>('overview');
+
+  if (view === 'overview') {
+    return (
+      <ProjectsOverview
+        onOpenProject={() => {
+          setView('board');
+        }}
+      />
+    );
+  }
+
+  return (
+    <Board
+      onBackToProjects={() => {
+        setView('overview');
+      }}
+    />
+  );
+}
 
 function App() {
   return (
     <BoardProvider>
-      <Board />
+      <AppContent />
     </BoardProvider>
   );
 }

@@ -15,6 +15,7 @@ export type Priority = 'low' | 'medium' | 'high' | 'urgent';
  */
 export interface Card {
   id: string;
+  projectId: string;
   title: string;
   description: string;
   type: CardType;
