@@ -3,37 +3,35 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies for building native modules (better-sqlite3)
-RUN apk add --no-cache python3 make g++
+# Install pnpm and dependencies for building native modules (better-sqlite3)
+RUN corepack enable pnpm && \
+    apk add --no-cache python3 make g++
 
 # Copy package files
-COPY package*.json ./
+COPY package.json pnpm-lock.yaml ./
 
 # Install all dependencies (including dev for building)
-RUN npm ci
+RUN pnpm install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
 # Build the frontend
-RUN npm run build
+RUN pnpm run build
+
+# Prune dev dependencies, keeping only production deps with compiled native modules
+RUN pnpm prune --prod
 
 # Production stage
 FROM node:22-alpine
 
 WORKDIR /app
 
-# Install dependencies for native modules
-RUN apk add --no-cache python3 make g++
-
 # Copy package files
-COPY package*.json ./
+COPY package.json ./
 
-# Install production dependencies only
-RUN npm ci --omit=dev && \
-    # Clean up build dependencies
-    apk del python3 make g++ && \
-    rm -rf /root/.npm /tmp/*
+# Copy node_modules from builder (includes compiled native modules)
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy built frontend from builder
 COPY --from=builder /app/dist ./dist
