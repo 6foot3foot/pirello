@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const rootDir = path.dirname(__dirname);
 
 const dataDir = process.env.BOARD_DATA_DIR ?? path.join(__dirname, 'data');
 fs.mkdirSync(dataDir, { recursive: true });
@@ -35,55 +36,70 @@ const app = express();
 app.use(express.json({ limit: '1mb' }));
 
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', process.env.CORS_ORIGIN ?? '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(204);
-    return;
-  }
-  next();
+    res.setHeader('Access-Control-Allow-Origin', process.env.CORS_ORIGIN ?? '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') {
+        res.sendStatus(204);
+        return;
+    }
+    next();
 });
 
 app.get('/api/board', (req, res) => {
-  try {
-    const row = selectState.get();
-    if (!row) {
-      res.status(204).end();
-      return;
+    try {
+        const row = selectState.get();
+        if (!row) {
+            res.status(204).end();
+            return;
+        }
+        res.json(JSON.parse(row.data));
+    } catch (error) {
+        console.error('Failed to load board state:', error);
+        res.status(500).json({ error: 'Failed to load board state' });
     }
-    res.json(JSON.parse(row.data));
-  } catch (error) {
-    console.error('Failed to load board state:', error);
-    res.status(500).json({ error: 'Failed to load board state' });
-  }
 });
 
 app.put('/api/board', (req, res) => {
-  try {
-    if (!req.body || typeof req.body !== 'object') {
-      res.status(400).json({ error: 'Invalid board payload' });
-      return;
+    try {
+        if (!req.body || typeof req.body !== 'object') {
+            res.status(400).json({ error: 'Invalid board payload' });
+            return;
+        }
+        upsertState.run(JSON.stringify(req.body));
+        res.status(204).end();
+    } catch (error) {
+        console.error('Failed to save board state:', error);
+        res.status(500).json({ error: 'Failed to save board state' });
     }
-    upsertState.run(JSON.stringify(req.body));
-    res.status(204).end();
-  } catch (error) {
-    console.error('Failed to save board state:', error);
-    res.status(500).json({ error: 'Failed to save board state' });
-  }
 });
 
 app.delete('/api/board', (req, res) => {
-  try {
-    deleteState.run();
-    res.status(204).end();
-  } catch (error) {
-    console.error('Failed to clear board state:', error);
-    res.status(500).json({ error: 'Failed to clear board state' });
-  }
+    try {
+        deleteState.run();
+        res.status(204).end();
+    } catch (error) {
+        console.error('Failed to clear board state:', error);
+        res.status(500).json({ error: 'Failed to clear board state' });
+    }
 });
+
+// Serve static frontend in production (Docker)
+if (process.env.SERVE_STATIC === 'true') {
+    const distPath = path.join(rootDir, 'dist');
+
+    // Serve static files
+    app.use(express.static(distPath));
+
+    // SPA fallback - serve index.html for all non-API routes
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(distPath, 'index.html'));
+    });
+
+    console.log(`Serving static files from ${distPath}`);
+}
 
 const port = Number(process.env.PORT ?? 3001);
 app.listen(port, () => {
-  console.log(`Board API listening on http://localhost:${port}`);
+    console.log(`Board API listening on http://localhost:${port}`);
 });

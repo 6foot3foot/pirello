@@ -1,0 +1,25 @@
+services:
+  pirello:
+    build: .
+    container_name: pirello
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    volumes:
+      # Persist database outside container
+      - pirello-data:/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - BOARD_DATA_DIR=/data
+      - SERVE_STATIC=true
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/board" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  pirello-data:
+    driver: local

@@ -1,0 +1,32 @@
+# Dependencies
+node_modules
+
+# Build output (rebuilt in container)
+dist
+
+# Database files
+*.db
+server/data/
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.sw?
+
+# Logs
+*.log
+logs
+
+# Docker files (prevent recursive builds)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Development files
+*.local
+.env*
+README.md
