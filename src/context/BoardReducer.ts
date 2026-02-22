@@ -474,37 +474,23 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
                 return state;
             }
 
-            // Move cards to the first remaining lane
-            const remainingLanes = activeProject.lanes.filter(l => l.id !== id);
-            const firstLane = remainingLanes[0];
-
-            // Update cards to point to new lane
-            const updatedCards = { ...state.cards };
-            for (const cardId of laneToDelete.cardIds) {
-                if (updatedCards[cardId]) {
-                    updatedCards[cardId] = {
-                        ...updatedCards[cardId],
-                        laneId: firstLane.id,
-                        updatedAt: now,
-                    };
-                }
+            // Don't allow deleting lanes that contain cards
+            if (laneToDelete.cardIds.length > 0) {
+                return {
+                    ...state,
+                    error: 'Cannot delete a lane that contains cards. Move or delete all cards first.',
+                };
             }
 
-            // Add cards to first lane
-            const updatedLanes = remainingLanes.map((lane, index) => {
-                if (lane.id === firstLane.id) {
-                    return {
-                        ...lane,
-                        cardIds: [...lane.cardIds, ...laneToDelete.cardIds],
-                        order: index,
-                    };
-                }
-                return { ...lane, order: index };
-            });
+            const remainingLanes = activeProject.lanes.filter(l => l.id !== id);
+
+            const updatedLanes = remainingLanes.map((lane, index) => ({
+                ...lane,
+                order: index,
+            }));
 
             return {
                 ...state,
-                cards: updatedCards,
                 projects: mapActiveProject(state, project => ({
                     ...project,
                     lanes: updatedLanes,

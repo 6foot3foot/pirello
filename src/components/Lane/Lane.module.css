@@ -83,6 +83,19 @@
   color: var(--color-danger);
 }
 
+.deleteBtn.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.header:hover .deleteBtn.disabled {
+  opacity: 0.3;
+}
+
+.deleteBtn.disabled:hover {
+  color: var(--color-text-muted);
+}
+
 .cards {
   flex: 1;
   overflow-y: auto;

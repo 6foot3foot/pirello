@@ -21,6 +21,7 @@ export function Lane({ lane, cards }: LaneProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState(lane.title);
   const [cardToDelete, setCardToDelete] = useState<string | null>(null);
+  const [showLaneDeleteError, setShowLaneDeleteError] = useState(false);
 
   const { addCard, deleteCard, updateLane, deleteLane, activeProject } =
     useBoard();
@@ -64,6 +65,10 @@ export function Lane({ lane, cards }: LaneProps) {
   };
 
   const handleDeleteLane = () => {
+    if (cards.length > 0) {
+      setShowLaneDeleteError(true);
+      return;
+    }
     deleteLane(lane.id);
   };
 
@@ -75,6 +80,7 @@ export function Lane({ lane, cards }: LaneProps) {
   };
 
   const canDeleteLane = (activeProject?.lanes.length ?? 0) > 1;
+  const hasCards = cards.length > 0;
 
   return (
     <>
@@ -116,12 +122,12 @@ export function Lane({ lane, cards }: LaneProps) {
           <span className={styles.count}>{cards.length}</span>
           {canDeleteLane && (
             <button
-              className={styles.deleteBtn}
+              className={`${styles.deleteBtn} ${hasCards ? styles.disabled : ''}`}
               onClick={e => {
                 e.stopPropagation();
                 handleDeleteLane();
               }}
-              title="Delete lane"
+              title={hasCards ? "Move or delete all cards first" : "Delete lane"}
             >
               ×
             </button>
@@ -164,7 +170,7 @@ export function Lane({ lane, cards }: LaneProps) {
         )}
       </div>
 
-      {/* Delete confirmation dialog */}
+      {/* Delete card confirmation dialog */}
       <Dialog
         isOpen={cardToDelete !== null}
         onClose={() => setCardToDelete(null)}
@@ -174,6 +180,19 @@ export function Lane({ lane, cards }: LaneProps) {
         onConfirm={handleConfirmDeleteCard}
       >
         Are you sure you want to delete this card? This action can be undone using the undo button.
+      </Dialog>
+
+      {/* Lane has cards error dialog */}
+      <Dialog
+        isOpen={showLaneDeleteError}
+        onClose={() => setShowLaneDeleteError(false)}
+        title="Cannot Delete Lane"
+        variant="danger"
+        confirmLabel="OK"
+        onConfirm={() => setShowLaneDeleteError(false)}
+      >
+        This lane contains {cards.length} card{cards.length !== 1 ? 's' : ''}. 
+        Please move or delete all cards before deleting the lane.
       </Dialog>
     </>
   );
