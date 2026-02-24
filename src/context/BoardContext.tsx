@@ -210,6 +210,9 @@ export function BoardProvider({ children, initialState }: BoardProviderProps) {
     );
 
     const saveTimeoutRef = useRef<number | null>(null);
+    const pendingSaveRef = useRef<BoardState | null>(null);
+    const serverVersionRef = useRef<string | null>(null);
+    const pollIntervalRef = useRef<number | null>(null);
 
     // Load state from storage on mount
     useEffect(() => {
@@ -223,11 +226,12 @@ export function BoardProvider({ children, initialState }: BoardProviderProps) {
 
         const loadState = async () => {
             try {
-                const savedState = await storage.load();
+                const result = await storage.load();
                 if (!isActive) return;
 
-                if (savedState) {
-                    const normalized = normalizeState(savedState);
+                if (result) {
+                    const normalized = normalizeState(result.state);
+                    serverVersionRef.current = result.version;
                     dispatch({
                         type: 'LOAD_STATE',
                         payload: { ...normalized, isLoading: false },
@@ -259,16 +263,65 @@ export function BoardProvider({ children, initialState }: BoardProviderProps) {
         };
     }, []);
 
+    // Poll for external changes (e.g., from MCP) and merge them smoothly
+    useEffect(() => {
+        if (state.isLoading) return;
+
+        const checkForUpdates = async () => {
+            try {
+                const currentVersion = await storage.getVersion();
+                if (currentVersion && currentVersion !== serverVersionRef.current) {
+                    // Load new state from server
+                    const result = await storage.load();
+                    if (result) {
+                        const serverState = normalizeState(result.state);
+                        serverVersionRef.current = result.version;
+                        
+                        // Smart merge: dispatch action to merge external changes
+                        dispatch({
+                            type: 'MERGE_EXTERNAL_CHANGES',
+                            payload: serverState,
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to check for updates:', error);
+            }
+        };
+
+        // Poll every 3 seconds
+        pollIntervalRef.current = window.setInterval(checkForUpdates, 3000);
+
+        return () => {
+            if (pollIntervalRef.current !== null) {
+                window.clearInterval(pollIntervalRef.current);
+            }
+        };
+    }, [state.isLoading]);
+
     // Save state to storage whenever it changes (after initial load)
     useEffect(() => {
         if (state.isLoading) return;
+
+        // Track pending changes
+        pendingSaveRef.current = state;
 
         if (saveTimeoutRef.current !== null) {
             window.clearTimeout(saveTimeoutRef.current);
         }
 
-        saveTimeoutRef.current = window.setTimeout(() => {
-            void storage.save(state);
+        saveTimeoutRef.current = window.setTimeout(async () => {
+            try {
+                await storage.save(state);
+                // Update our version after successful save
+                const newVersion = await storage.getVersion();
+                if (newVersion) {
+                    serverVersionRef.current = newVersion;
+                }
+                pendingSaveRef.current = null;
+            } catch (error) {
+                console.error('Failed to save:', error);
+            }
         }, 400);
 
         return () => {
@@ -277,6 +330,31 @@ export function BoardProvider({ children, initialState }: BoardProviderProps) {
             }
         };
     }, [state]);
+
+    // Save immediately before page unload to prevent data loss
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            // Check if there are unsaved changes
+            if (pendingSaveRef.current !== null) {
+                // Cancel the debounced save
+                if (saveTimeoutRef.current !== null) {
+                    window.clearTimeout(saveTimeoutRef.current);
+                }
+                
+                // Use sendBeacon for reliable save on page unload
+                const data = JSON.stringify(pendingSaveRef.current);
+                const blob = new Blob([data], { type: 'application/json' });
+                const apiBase = import.meta.env.VITE_API_BASE ?? '';
+                navigator.sendBeacon(`${apiBase}/api/board`, blob);
+                
+                // Clear pending save since we just sent it
+                pendingSaveRef.current = null;
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, []);
 
     // Card methods
     const addCard = useCallback(

@@ -26,6 +26,7 @@ export type BoardAction =
   | { type: 'DELETE_PROJECT'; payload: { id: string } }
   | { type: 'SET_ACTIVE_PROJECT'; payload: { id: string } }
   | { type: 'LOAD_STATE'; payload: BoardState }
+  | { type: 'MERGE_EXTERNAL_CHANGES'; payload: BoardState }
   // Error handling
   | { type: 'SET_ERROR'; payload: string | null };
 

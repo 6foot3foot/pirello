@@ -4,13 +4,12 @@ import { Button, Input } from '../common';
 import styles from './ProjectsOverview.module.css';
 
 interface ProjectsOverviewProps {
-  onOpenProject: () => void;
+  onOpenProject: (projectId: string) => void;
 }
 
 export function ProjectsOverview({ onOpenProject }: ProjectsOverviewProps) {
   const {
     projects,
-    setActiveProject,
     addProject,
     updateProjectById,
     state,
@@ -47,8 +46,7 @@ export function ProjectsOverview({ onOpenProject }: ProjectsOverviewProps) {
   };
 
   const handleOpenProject = (projectId: string) => {
-    setActiveProject(projectId);
-    onOpenProject();
+    onOpenProject(projectId);
   };
 
   return (

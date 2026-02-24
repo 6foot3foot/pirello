@@ -22,7 +22,8 @@ db.exec(`
   )
 `);
 
-const selectState = db.prepare('SELECT data FROM board_state WHERE id = 1');
+const selectState = db.prepare('SELECT data, updated_at FROM board_state WHERE id = 1');
+const selectVersion = db.prepare('SELECT updated_at FROM board_state WHERE id = 1');
 const upsertState = db.prepare(`
   INSERT INTO board_state (id, data, updated_at)
   VALUES (1, ?, CURRENT_TIMESTAMP)
@@ -53,10 +54,28 @@ app.get('/api/board', (req, res) => {
             res.status(204).end();
             return;
         }
-        res.json(JSON.parse(row.data));
+        const data = JSON.parse(row.data);
+        // Include version in response for sync
+        data._version = row.updated_at;
+        res.json(data);
     } catch (error) {
         console.error('Failed to load board state:', error);
         res.status(500).json({ error: 'Failed to load board state' });
+    }
+});
+
+// Quick version check endpoint for polling
+app.get('/api/board/version', (req, res) => {
+    try {
+        const row = selectVersion.get();
+        if (!row) {
+            res.status(204).end();
+            return;
+        }
+        res.json({ version: row.updated_at });
+    } catch (error) {
+        console.error('Failed to get version:', error);
+        res.status(500).json({ error: 'Failed to get version' });
     }
 });
 

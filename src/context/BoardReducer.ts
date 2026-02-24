@@ -610,6 +610,68 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
             };
         }
 
+        case 'MERGE_EXTERNAL_CHANGES': {
+            const serverState = action.payload;
+            
+            // Merge cards: add new cards from server, keep local cards unchanged
+            const mergedCards = { ...state.cards };
+            for (const [cardId, serverCard] of Object.entries(serverState.cards)) {
+                if (!mergedCards[cardId]) {
+                    // New card from server (e.g., created by MCP)
+                    mergedCards[cardId] = serverCard;
+                }
+                // If card exists locally, keep local version (preserves edits)
+            }
+            
+            // Merge projects: add new projects, merge lanes for existing projects
+            const mergedProjects = state.projects.map(localProject => {
+                const serverProject = serverState.projects.find(p => p.id === localProject.id);
+                if (!serverProject) {
+                    return localProject;
+                }
+                
+                // Merge lanes: add new card IDs from server
+                const mergedLanes = localProject.lanes.map(localLane => {
+                    const serverLane = serverProject.lanes.find(l => l.id === localLane.id);
+                    if (!serverLane) {
+                        return localLane;
+                    }
+                    
+                    // Add any new card IDs from server that we don't have locally
+                    const localCardIds = new Set(localLane.cardIds);
+                    const newCardIds = serverLane.cardIds.filter(id => !localCardIds.has(id));
+                    
+                    if (newCardIds.length > 0) {
+                        return {
+                            ...localLane,
+                            cardIds: [...localLane.cardIds, ...newCardIds],
+                        };
+                    }
+                    return localLane;
+                });
+                
+                // Add any new lanes from server
+                const localLaneIds = new Set(localProject.lanes.map(l => l.id));
+                const newLanes = serverProject.lanes.filter(l => !localLaneIds.has(l.id));
+                
+                return {
+                    ...localProject,
+                    lanes: [...mergedLanes, ...newLanes],
+                };
+            });
+            
+            // Add any new projects from server
+            const localProjectIds = new Set(state.projects.map(p => p.id));
+            const newProjects = serverState.projects.filter(p => !localProjectIds.has(p.id));
+            
+            return {
+                ...state,
+                cards: mergedCards,
+                projects: [...mergedProjects, ...newProjects],
+                // Keep local activeProjectId
+            };
+        }
+
         case 'SET_ERROR': {
             return {
                 ...state,

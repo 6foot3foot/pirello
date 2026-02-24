@@ -2,7 +2,13 @@ import type { BoardState } from '../context';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 const BOARD_ENDPOINT = `${API_BASE}/api/board`;
+const VERSION_ENDPOINT = `${API_BASE}/api/board/version`;
 const REQUEST_TIMEOUT_MS = 4000;
+
+export interface LoadResult {
+  state: BoardState;
+  version: string | null;
+}
 
 async function fetchWithTimeout(
   input: RequestInfo | URL,
@@ -44,7 +50,7 @@ export const storage = {
    * Load board state from API
    * Returns null if no saved state exists
    */
-  async load(): Promise<BoardState | null> {
+  async load(): Promise<LoadResult | null> {
     try {
       const response = await fetchWithTimeout(BOARD_ENDPOINT);
       if (response.status === 204) {
@@ -53,9 +59,32 @@ export const storage = {
       if (!response.ok) {
         throw new Error(`Load failed with status ${response.status}`);
       }
-      return (await response.json()) as BoardState;
+      const data = await response.json();
+      const version = data._version ?? null;
+      delete data._version;
+      return { state: data as BoardState, version };
     } catch (error) {
       console.error('Failed to load state from API:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Get current version from server (lightweight check)
+   */
+  async getVersion(): Promise<string | null> {
+    try {
+      const response = await fetchWithTimeout(VERSION_ENDPOINT);
+      if (response.status === 204) {
+        return null;
+      }
+      if (!response.ok) {
+        throw new Error(`Version check failed with status ${response.status}`);
+      }
+      const data = await response.json();
+      return data.version ?? null;
+    } catch (error) {
+      console.error('Failed to get version:', error);
       return null;
     }
   },
