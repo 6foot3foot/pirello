@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useBoard } from '../../context';
-import { Button, Input } from '../common';
+import { Button, Input, ImageUpload } from '../common';
 import styles from './ProjectsOverview.module.css';
 
 interface ProjectsOverviewProps {
@@ -15,8 +15,7 @@ export function ProjectsOverview({ onOpenProject }: ProjectsOverviewProps) {
     state,
   } = useBoard();
   const [titleDraft, setTitleDraft] = useState('');
-  const [thumbnailDraft, setThumbnailDraft] = useState('');
-  const [thumbnailEdits, setThumbnailEdits] = useState<Record<string, string>>({});
+  const [thumbnailDraft, setThumbnailDraft] = useState<string | null>(null);
 
   const cardCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -39,10 +38,10 @@ export function ProjectsOverview({ onOpenProject }: ProjectsOverviewProps) {
     if (!titleDraft.trim()) return;
     addProject({
       title: titleDraft.trim(),
-      thumbnailUrl: thumbnailDraft.trim() || null,
+      thumbnailUrl: thumbnailDraft,
     });
     setTitleDraft('');
-    setThumbnailDraft('');
+    setThumbnailDraft(null);
   };
 
   const handleOpenProject = (projectId: string) => {
@@ -66,12 +65,14 @@ export function ProjectsOverview({ onOpenProject }: ProjectsOverviewProps) {
             onChange={event => setTitleDraft(event.target.value)}
             placeholder="e.g. Product launch"
           />
-          <Input
-            label="Thumbnail URL (optional)"
-            value={thumbnailDraft}
-            onChange={event => setThumbnailDraft(event.target.value)}
-            placeholder="https://..."
-          />
+          <div className={styles.thumbnailUploadField}>
+            <label className={styles.fieldLabel}>Thumbnail (optional)</label>
+            <ImageUpload
+              value={thumbnailDraft}
+              onChange={setThumbnailDraft}
+              placeholder="Click to upload thumbnail"
+            />
+          </div>
         </div>
         <div className={styles.createActions}>
           <Button
@@ -86,20 +87,15 @@ export function ProjectsOverview({ onOpenProject }: ProjectsOverviewProps) {
 
       <section className={styles.grid}>
         {projects.map(project => {
-          const draft = thumbnailEdits[project.id] ?? project.thumbnailUrl ?? '';
           const cardsCount = cardCounts[project.id] ?? 0;
           return (
             <article key={project.id} className={styles.card}>
               <div className={styles.thumbnail}>
-                {project.thumbnailUrl ? (
-                  <img
-                    src={project.thumbnailUrl}
-                    alt=""
-                    className={styles.thumbnailImage}
-                  />
-                ) : (
-                  <div className={styles.thumbnailPlaceholder}>No thumbnail</div>
-                )}
+                <ImageUpload
+                  value={project.thumbnailUrl ?? null}
+                  onChange={(url) => updateProjectById(project.id, { thumbnailUrl: url })}
+                  placeholder="Upload thumbnail"
+                />
               </div>
               <div className={styles.cardBody}>
                 <div className={styles.cardHeader}>
@@ -107,33 +103,6 @@ export function ProjectsOverview({ onOpenProject }: ProjectsOverviewProps) {
                   <p className={styles.cardMeta}>
                     {project.lanes.length} lanes · {cardsCount} cards
                   </p>
-                </div>
-                <div className={styles.thumbnailEditor}>
-                  <label className={styles.thumbnailLabel}>Thumbnail URL</label>
-                  <input
-                    className={styles.thumbnailInput}
-                    value={draft}
-                    onChange={event =>
-                      setThumbnailEdits(prev => ({
-                        ...prev,
-                        [project.id]: event.target.value,
-                      }))
-                    }
-                    onBlur={() => {
-                      const trimmed = draft.trim();
-                      if ((project.thumbnailUrl ?? '') !== trimmed) {
-                        updateProjectById(project.id, {
-                          thumbnailUrl: trimmed || null,
-                        });
-                      }
-                    }}
-                    onKeyDown={event => {
-                      if (event.key === 'Enter') {
-                        (event.target as HTMLInputElement).blur();
-                      }
-                    }}
-                    placeholder="https://..."
-                  />
                 </div>
                 <div className={styles.cardActions}>
                   <Button

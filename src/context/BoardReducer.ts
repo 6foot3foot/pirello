@@ -24,6 +24,7 @@ function createCardVersion(card: Card, existingVersions: CardVersion[]): CardVer
             dueDate: card.dueDate,
             labels: card.labels,
             assignee: card.assignee,
+            attachments: card.attachments,
             laneId: card.laneId,
             order: card.order,
             isDeleted: card.isDeleted,

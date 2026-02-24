@@ -11,6 +11,18 @@ export type CardType = 'feature' | 'bug' | 'task' | 'story';
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
 /**
+ * File attachment metadata
+ */
+export interface Attachment {
+  id: string;
+  hash: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  uploadedAt: string; // ISO date string
+}
+
+/**
  * A card on the board
  */
 export interface Card {
@@ -23,6 +35,7 @@ export interface Card {
   dueDate: string | null; // ISO date string for serialization
   labels: Label[];
   assignee: string | null;
+  attachments: Attachment[];
   laneId: string;
   order: number;
   isDeleted: boolean; // Soft delete flag

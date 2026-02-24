@@ -49,6 +49,7 @@ export function Lane({ lane, cards }: LaneProps) {
       dueDate: cardData.dueDate ?? null,
       labels: cardData.labels ?? [],
       assignee: cardData.assignee ?? null,
+      attachments: cardData.attachments ?? [],
       laneId: lane.id,
       order: cards.length,
     });

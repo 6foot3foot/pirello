@@ -89,6 +89,11 @@ export function Card({ card, onDelete }: CardProps) {
         {card.assignee && (
           <span className={styles.assignee}>👤 {card.assignee}</span>
         )}
+        {card.attachments?.length > 0 && (
+          <span className={styles.attachmentCount}>
+            📎 {card.attachments.length}
+          </span>
+        )}
         <span className={styles.type}>{card.type}</span>
       </div>
 

@@ -1,0 +1,127 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.imageLink {
+  display: block;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.thumbnail {
+  max-width: 100%;
+  max-height: 120px;
+  object-fit: contain;
+  display: block;
+  border-radius: var(--radius-sm);
+}
+
+.fileLink {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--color-secondary);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--color-text);
+  flex: 1;
+  min-width: 0;
+}
+
+.fileLink:hover {
+  background: var(--color-hover);
+}
+
+.fileIcon {
+  flex-shrink: 0;
+}
+
+.fileName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
+}
+
+.fileSize {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.removeBtn {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: var(--color-danger);
+  border: none;
+  color: white;
+  font-size: 0.875rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.item:hover .removeBtn {
+  opacity: 1;
+}
+
+.uploadArea {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.uploadArea:hover {
+  border-color: var(--color-primary);
+  background: var(--color-hover);
+}
+
+.input {
+  display: none;
+}
+
+.placeholder {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.uploading {
+  color: var(--color-primary);
+  font-size: 0.8rem;
+}
+
+.error {
+  color: var(--color-danger);
+  font-size: 0.75rem;
+  margin: 0;
+}

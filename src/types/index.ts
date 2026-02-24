@@ -1,5 +1,5 @@
 // Card types
-export type { Card, CardInput, CardVersion, CardType, Priority } from './card';
+export type { Card, CardInput, CardVersion, CardType, Priority, Attachment } from './card';
 
 // Lane types
 export type { Lane, LaneInput } from './lane';

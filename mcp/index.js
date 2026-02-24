@@ -205,6 +205,54 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["title"],
         },
       },
+      {
+        name: "add_attachment",
+        description: "Add an attachment to a card (file must already be uploaded)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            cardId: {
+              type: "string",
+              description: "The card ID to add attachment to",
+            },
+            hash: {
+              type: "string",
+              description: "The file hash (from upload)",
+            },
+            filename: {
+              type: "string",
+              description: "Original filename",
+            },
+            mimeType: {
+              type: "string",
+              description: "MIME type of the file",
+            },
+            size: {
+              type: "number",
+              description: "File size in bytes",
+            },
+          },
+          required: ["cardId", "hash", "filename", "mimeType", "size"],
+        },
+      },
+      {
+        name: "remove_attachment",
+        description: "Remove an attachment from a card",
+        inputSchema: {
+          type: "object",
+          properties: {
+            cardId: {
+              type: "string",
+              description: "The card ID",
+            },
+            attachmentId: {
+              type: "string",
+              description: "The attachment ID to remove",
+            },
+          },
+          required: ["cardId", "attachmentId"],
+        },
+      },
     ],
   };
 });
@@ -321,6 +369,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           dueDate: null,
           labels: [],
           assignee: null,
+          attachments: [],
           laneId: laneId,
           order: lane.cardIds.length,
           isDeleted: false,
@@ -463,6 +512,73 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: "text",
               text: `Created project "${args.title}" with ID: ${projectId}`,
+            },
+          ],
+        };
+      }
+
+      case "add_attachment": {
+        const card = state.cards[args.cardId];
+        if (!card) {
+          throw new Error(`Card not found: ${args.cardId}`);
+        }
+
+        if (!card.attachments) {
+          card.attachments = [];
+        }
+
+        const attachmentId = generateId();
+        const attachment = {
+          id: attachmentId,
+          hash: args.hash,
+          filename: args.filename,
+          mimeType: args.mimeType,
+          size: args.size,
+          uploadedAt: new Date().toISOString(),
+        };
+
+        card.attachments.push(attachment);
+        card.updatedAt = new Date().toISOString();
+
+        await saveBoard(state);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Added attachment "${args.filename}" to card "${card.title}" with ID: ${attachmentId}`,
+            },
+          ],
+        };
+      }
+
+      case "remove_attachment": {
+        const card = state.cards[args.cardId];
+        if (!card) {
+          throw new Error(`Card not found: ${args.cardId}`);
+        }
+
+        if (!card.attachments) {
+          throw new Error(`Card has no attachments`);
+        }
+
+        const attachmentIndex = card.attachments.findIndex(
+          (a) => a.id === args.attachmentId
+        );
+        if (attachmentIndex === -1) {
+          throw new Error(`Attachment not found: ${args.attachmentId}`);
+        }
+
+        const removed = card.attachments.splice(attachmentIndex, 1)[0];
+        card.updatedAt = new Date().toISOString();
+
+        await saveBoard(state);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Removed attachment "${removed.filename}" from card "${card.title}"`,
             },
           ],
         };

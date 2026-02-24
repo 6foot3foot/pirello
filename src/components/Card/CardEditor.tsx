@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import type { Card, CardType, Priority, Label } from '../../types';
+import type { Card, CardType, Priority, Label, Attachment } from '../../types';
 import { DEFAULT_LABELS } from '../../types';
-import { Button } from '../common';
+import { Button, FileAttachment } from '../common';
 import styles from './Card.module.css';
 
 interface CardEditorProps {
@@ -32,6 +32,7 @@ export function CardEditor({ card, onSave, onCancel }: CardEditorProps) {
   const [dueDate, setDueDate] = useState(card?.dueDate ?? '');
   const [assignee, setAssignee] = useState(card?.assignee ?? '');
   const [selectedLabels, setSelectedLabels] = useState<Label[]>(card?.labels ?? []);
+  const [attachments, setAttachments] = useState<Attachment[]>(card?.attachments ?? []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +46,7 @@ export function CardEditor({ card, onSave, onCancel }: CardEditorProps) {
       dueDate: dueDate || null,
       assignee: assignee.trim() || null,
       labels: selectedLabels,
+      attachments,
     });
   };
 
@@ -136,6 +138,14 @@ export function CardEditor({ card, onSave, onCancel }: CardEditorProps) {
             {label.name}
           </button>
         ))}
+      </div>
+
+      {/* Attachments */}
+      <div className={styles.attachmentsSection}>
+        <FileAttachment
+          attachments={attachments}
+          onChange={setAttachments}
+        />
       </div>
 
       <div className={styles.editorActions}>
