@@ -624,6 +624,17 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
                 // If card exists locally, keep local version (preserves edits)
             }
             
+            // Build a set of ALL card IDs that exist in ANY local lane (across all projects)
+            // This prevents adding a card to a lane if it was moved to a different lane locally
+            const allLocalCardIds = new Set<string>();
+            for (const project of state.projects) {
+                for (const lane of project.lanes) {
+                    for (const cardId of lane.cardIds) {
+                        allLocalCardIds.add(cardId);
+                    }
+                }
+            }
+            
             // Merge projects: add new projects, merge lanes for existing projects
             const mergedProjects = state.projects.map(localProject => {
                 const serverProject = serverState.projects.find(p => p.id === localProject.id);
@@ -631,16 +642,16 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
                     return localProject;
                 }
                 
-                // Merge lanes: add new card IDs from server
+                // Merge lanes: add new card IDs from server (only if card doesn't exist anywhere locally)
                 const mergedLanes = localProject.lanes.map(localLane => {
                     const serverLane = serverProject.lanes.find(l => l.id === localLane.id);
                     if (!serverLane) {
                         return localLane;
                     }
                     
-                    // Add any new card IDs from server that we don't have locally
-                    const localCardIds = new Set(localLane.cardIds);
-                    const newCardIds = serverLane.cardIds.filter(id => !localCardIds.has(id));
+                    // Only add card IDs that don't exist in ANY local lane
+                    // This prevents duplicates when cards are moved between lanes
+                    const newCardIds = serverLane.cardIds.filter(id => !allLocalCardIds.has(id));
                     
                     if (newCardIds.length > 0) {
                         return {
